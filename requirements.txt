@@ -1,0 +1,6 @@
+streamlit
+python-dotenv
+google-generativeai
+notion-client
+requests
+serpapi
