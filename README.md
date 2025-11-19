@@ -23,7 +23,7 @@ A futuristic, multi-agent AI research assistant with real-time web search, Notio
    ```bash
    streamlit run app.py
    ```
-   Open http://localhost:8501](https://ai-research-copilot-x7q6g2yqupmztiqyu4q3sg.streamlit.app/
+   Open https://ai-research-copilot-x7q6g2yqupmztiqyu4q3sg.streamlit.app/
 
 ## Features
 
