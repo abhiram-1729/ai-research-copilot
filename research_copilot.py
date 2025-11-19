@@ -7,6 +7,7 @@ import json
 from typing import List, Dict, Any
 import re
 from datetime import datetime
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -402,23 +403,42 @@ class ResearchCopilot:
         if save_to_notion and self.notion_available:
             print("💾 Saving to Notion...")
             title = f"Research: {topic}"
-            notion_result = self.create_notion_page(title, summary, tags=[topic, "research"])
+            try:
+                notion_result = self.create_notion_page(title, summary, tags=[topic, "research"])
+                # Log the result for diagnostics on deployed site
+                print(f"research_workflow: create_notion_page result: {notion_result}", file=sys.stderr)
+
+                # If creation returned an indication of content-append failure or other warning, attempt a safe fallback
+                if notion_result and ("failed to append content" in notion_result or "Database property mismatch" in notion_result or "Notion error" in notion_result):
+                    try:
+                        fallback_title = title + " (fallback)"
+                        fallback_content = f"Research summary truncated. Topic: {topic}"
+                        fallback_res = self.create_notion_page(fallback_title, fallback_content)
+                        print(f"research_workflow: fallback create result: {fallback_res}", file=sys.stderr)
+                    except Exception as fe:
+                        print(f"research_workflow: fallback create failed: {fe}", file=sys.stderr)
+            except Exception as e:
+                notion_result = f"❌ Notion save exception: {e}"
+                print(f"research_workflow: Notion save exception: {e}", file=sys.stderr)
         elif save_to_notion and not self.notion_available:
             notion_result = "⚠️  Notion not available for saving"
         
         # Update conversation history
-        self.conversation_history.append({
-            "topic": topic,
-            "summary": summary,
-            "saved_to_notion": save_to_notion and self.notion_available,
-            "used_real_time": use_real_time,
-            "timestamp": datetime.now().isoformat()
-        })
+        try:
+            self.conversation_history.append({
+                "topic": topic,
+                "summary": summary,
+                "saved_to_notion": save_to_notion and self.notion_available,
+                "used_real_time": use_real_time,
+                "timestamp": datetime.now().isoformat()
+            })
+        except Exception as e:
+            print(f"Failed to append to conversation_history: {e}", file=sys.stderr)
         
         return {
             "topic": topic,
             "existing_research": existing_research,
-            "search_results": search_results[:500] + "..." if len(search_results) > 500 else search_results,
+            "search_results": search_results[:500] + "..." if isinstance(search_results, str) and len(search_results) > 500 else search_results,
             "summary": summary,
             "notion_result": notion_result,
             "conversation_history": len(self.conversation_history),
