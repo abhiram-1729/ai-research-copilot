@@ -215,6 +215,7 @@ with tabs[1]:
                     saved_to_notion = True
                 except Exception as e:
                     st.error(f"Notion save failed: {e}")
+                    print(f"Notion save failed (Search): {e}", file=sys.stderr)
 
             # Record history for UI searches
             try:
@@ -256,6 +257,7 @@ with tabs[2]:
                     saved_to_notion = True
                 except Exception as e:
                     st.error(f"Notion save failed: {e}")
+                    print(f"Notion save failed (News): {e}", file=sys.stderr)
 
             # Record history for UI news
             try:
@@ -299,6 +301,7 @@ with tabs[3]:
                     saved_to_notion = True
                 except Exception as e:
                     st.error(f"Notion save failed: {e}")
+                    print(f"Notion save failed (Summarize): {e}", file=sys.stderr)
 
             # Record history for summaries
             try:
@@ -340,6 +343,7 @@ with tabs[4]:
                     saved_to_notion = True
                 except Exception as e:
                     st.error(f"Notion save failed: {e}")
+                    print(f"Notion save failed (Compare): {e}", file=sys.stderr)
 
             # Record history for comparisons
             try:
@@ -381,6 +385,7 @@ with tabs[5]:
                     saved_to_notion = True
                 except Exception as e:
                     st.error(f"Notion save failed: {e}")
+                    print(f"Notion save failed (Trends): {e}", file=sys.stderr)
 
             # Record history for trend analysis
             try:
@@ -398,6 +403,25 @@ with tabs[5]:
 # ------------------ Notion Tab ------------------
 with tabs[6]:
     st.header("Notion Tools")
+    st.markdown("**Notion Diagnostics**")
+    st.write(f"- Notion integration available: {'✅' if copilot and copilot.notion_available else '❌'}")
+    if st.button('Run Notion Test'):
+        if not copilot:
+            st.error("Copilot not initialized")
+        else:
+            try:
+                test_title = f"TEST Save from App {datetime.utcnow().isoformat()}"
+                test_content = "This is a diagnostic test created by the deployed app to verify Notion saving and permissions."
+                with st.spinner('Running Notion test...'):
+                    res = copilot.create_notion_page(test_title, test_content)
+                st.success("Notion test succeeded")
+                st.write(res)
+                print(f"Notion test succeeded: {res}", file=sys.stderr)
+            except Exception as e:
+                st.error(f"Notion test failed: {e}")
+                print(f"Notion test failed: {e}", file=sys.stderr)
+                st.info("If this fails: invite the Notion integration to the database (Share -> Connections -> + Invite), and verify Streamlit Secrets contain NOTION_TOKEN and NOTION_DATABASE_ID.")
+    st.markdown("---")
     notion_query = st.text_input("Search Notion", key='notion_query')
     if st.button('Search Notion'):
         if not copilot:
