@@ -19,14 +19,22 @@ def load_env_vars():
             os.environ['SERPAPI_KEY'] = st.secrets.get('SERPAPI_KEY', '')
             os.environ['NOTION_TOKEN'] = st.secrets.get('NOTION_TOKEN', '')
             os.environ['NOTION_DATABASE_ID'] = st.secrets.get('NOTION_DATABASE_ID', '')
+            print(f"Loaded secrets from Streamlit", file=sys.stderr)
         else:
             # Fall back to .env file (local development)
             from dotenv import load_dotenv
             load_dotenv()
+            print(f"Loaded from .env file", file=sys.stderr)
     except Exception as e:
         print(f"Warning: Could not load environment variables: {e}", file=sys.stderr)
 
 load_env_vars()
+
+# Verify environment variables are loaded
+print(f"GEMINI_API_KEY loaded: {bool(os.getenv('GEMINI_API_KEY'))}", file=sys.stderr)
+print(f"SERPAPI_KEY loaded: {bool(os.getenv('SERPAPI_KEY'))}", file=sys.stderr)
+print(f"NOTION_TOKEN loaded: {bool(os.getenv('NOTION_TOKEN'))}", file=sys.stderr)
+print(f"NOTION_DATABASE_ID loaded: {bool(os.getenv('NOTION_DATABASE_ID'))}", file=sys.stderr)
 
 # Initialize copilot and store in session state (with timeout protection)
 if 'copilot' not in st.session_state:
@@ -99,6 +107,20 @@ with st.sidebar:
     st.title("AI Research Copilot")
     st.caption("Research assistant with real-time search & Notion integration")
     st.markdown("---")
+    
+    # Debug info (show which keys are loaded)
+    with st.expander("🔍 Debug Info"):
+        gemini_loaded = bool(os.getenv('GEMINI_API_KEY', '').strip())
+        serpapi_loaded = bool(os.getenv('SERPAPI_KEY', '').strip())
+        notion_token = bool(os.getenv('NOTION_TOKEN', '').strip())
+        notion_db = bool(os.getenv('NOTION_DATABASE_ID', '').strip())
+        
+        st.write("**Environment Variables:**")
+        st.write(f"- GEMINI_API_KEY: {'✅ Loaded' if gemini_loaded else '❌ Missing'}")
+        st.write(f"- SERPAPI_KEY: {'✅ Loaded' if serpapi_loaded else '❌ Missing'}")
+        st.write(f"- NOTION_TOKEN: {'✅ Loaded' if notion_token else '❌ Missing'}")
+        st.write(f"- NOTION_DATABASE_ID: {'✅ Loaded' if notion_db else '❌ Missing'}")
+    
     st.subheader("API Status")
     if copilot:
         st.write("- Gemini: ✅" if copilot.gemini_api_key else "- Gemini: ❌ Not configured")
@@ -109,19 +131,6 @@ with st.sidebar:
         st.error("⚠️ Initialization Failed")
         if st.session_state.init_error:
             st.error(st.session_state.init_error)
-            st.markdown("""
-            **Fix for Streamlit Cloud:**
-            1. Go to your app settings (⚙️ gear icon)
-            2. Click "Secrets"
-            3. Add:
-               ```
-               GEMINI_API_KEY = "your-key-here"
-               SERPAPI_KEY = "your-key-here"
-               NOTION_TOKEN = "your-key-here"
-               NOTION_DATABASE_ID = "your-id-here"
-               ```
-            4. Reboot your app
-            """)
     st.markdown("---")
     st.caption("Tips: enter queries and press the action button. Results auto-save to Notion when configured.")
     st.markdown("---")
