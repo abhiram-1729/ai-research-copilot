@@ -2,21 +2,47 @@ import streamlit as st
 from datetime import datetime
 import time
 import os
+import sys
 
 # Import the copilot classes
 from research_copilot import AdvancedResearchCopilot
 
 st.set_page_config(page_title="AI Research Copilot", layout="wide")
 
-# Initialize copilot and store in session state
+# Load environment variables from st.secrets (Streamlit Cloud) or .env (local)
+def load_env_vars():
+    """Load environment variables from secrets or .env file"""
+    try:
+        # Try to get from Streamlit secrets first (Cloud deployment)
+        if hasattr(st, 'secrets') and len(st.secrets) > 0:
+            os.environ['GEMINI_API_KEY'] = st.secrets.get('GEMINI_API_KEY', '')
+            os.environ['SERPAPI_KEY'] = st.secrets.get('SERPAPI_KEY', '')
+            os.environ['NOTION_TOKEN'] = st.secrets.get('NOTION_TOKEN', '')
+            os.environ['NOTION_DATABASE_ID'] = st.secrets.get('NOTION_DATABASE_ID', '')
+        else:
+            # Fall back to .env file (local development)
+            from dotenv import load_dotenv
+            load_dotenv()
+    except Exception as e:
+        print(f"Warning: Could not load environment variables: {e}", file=sys.stderr)
+
+load_env_vars()
+
+# Initialize copilot and store in session state (with timeout protection)
 if 'copilot' not in st.session_state:
     with st.spinner('Initializing AI Research Copilot...'):
         try:
-            st.session_state.copilot = AdvancedResearchCopilot()
-            st.session_state.init_error = None
+            # Check if required API keys exist before initializing
+            gemini_key = os.getenv('GEMINI_API_KEY', '').strip()
+            if not gemini_key:
+                st.session_state.copilot = None
+                st.session_state.init_error = "GEMINI_API_KEY not configured. Please add it to Streamlit Secrets."
+            else:
+                st.session_state.copilot = AdvancedResearchCopilot()
+                st.session_state.init_error = None
         except Exception as e:
             st.session_state.copilot = None
-            st.session_state.init_error = str(e)
+            st.session_state.init_error = f"Initialization error: {str(e)[:200]}"
 
 copilot = st.session_state.copilot
 
@@ -78,18 +104,37 @@ with st.sidebar:
         st.write("- Gemini: ✅" if copilot.gemini_api_key else "- Gemini: ❌ Not configured")
         st.write("- SerpAPI: ✅" if copilot.serpapi_available else "- SerpAPI: ❌ Not configured")
         st.write("- Notion: ✅" if copilot.notion_available else "- Notion: ❌ Not configured")
+        st.success("✅ Ready to use")
     else:
-        st.error("Copilot failed to initialize")
+        st.error("⚠️ Initialization Failed")
         if st.session_state.init_error:
-            st.text(st.session_state.init_error)
+            st.error(st.session_state.init_error)
+            st.markdown("""
+            **Fix for Streamlit Cloud:**
+            1. Go to your app settings (⚙️ gear icon)
+            2. Click "Secrets"
+            3. Add:
+               ```
+               GEMINI_API_KEY = "your-key-here"
+               SERPAPI_KEY = "your-key-here"
+               NOTION_TOKEN = "your-key-here"
+               NOTION_DATABASE_ID = "your-id-here"
+               ```
+            4. Reboot your app
+            """)
     st.markdown("---")
     st.caption("Tips: enter queries and press the action button. Results auto-save to Notion when configured.")
     st.markdown("---")
     if st.button('Reload Copilot'):
-        st.experimental_rerun()
+        st.rerun()
 
 # Main layout
 neon_header("🔬 AI Research Copilot", "A futuristic assistant for searching, summarizing and saving research to Notion.")
+
+# Show prominent error if not initialized
+if not copilot:
+    st.error("🚨 **Copilot not initialized - Please configure API keys**")
+    st.stop()  # Prevent the rest of the app from running
 
 cols_banner = st.columns([1,3,1])
 with cols_banner[0]:
