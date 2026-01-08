@@ -361,6 +361,6 @@ MIT License — See [LICENSE](LICENSE) file for details.
 
 ---
 
-**Made with ❤️ by [Your Name]**
+**Made with ❤️ by Abhiram Rangoon**
 
 *Last Updated: November 2025*
